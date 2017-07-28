@@ -3,28 +3,29 @@ Author: Benjamin Doran
 Date: July 2017
 Purpose: make a usable motif finding dataset
 Output: 1 .csv file
+Data Source: Jasper database, http://jaspar.genereg.net
 """
 class JasperImporter:
     # startup
-    def init(self, url = "http://jaspar.genereg.net/html/DOWNLOAD/", filename = "Motifs.csv"):
+    def __init__(self, url = "http://jaspar.genereg.net/html/DOWNLOAD/", filename = "Motifs.csv"):
         """ Setup Importer"""
         self.url = url
         self.filename = filename
         import os.path
-        import pandas as pd
 
         if os.path.isfile(filename):
-            load.csv()
+            self.load_csv()
         else:
             self.df = None
 
     # functions
     def load_csv(self) -> bool:
         """ TODO """
-        self.df = pd.read_csv(self.filename, sep = ",", header = True)
+        import pandas as pd
+        self.df = pd.read_csv(self.filename, sep = ",", header = 1)
         return True
 
-    def load_jasper_bed_files(self, url) -> bool:
+    def load_jasper_bed_files(self) -> bool:
         """loads jasper bed files which contain jasper motif id
         and locus of motif, writes information to .csv file
         """
@@ -35,7 +36,12 @@ class JasperImporter:
             import re
             import requests
             from bs4 import BeautifulSoup
+            import pandas as pd
             bed_url = self.url + "bed_files/"
+            self.df = pd.DataFrame([])
+            final_cols = ["motif", "organism",
+                          "chromasome", "start",
+                           "stop", "query"]
 
             # enter bed directory
             response = requests.get(bed_url)
@@ -53,20 +59,20 @@ class JasperImporter:
                 locus_file["organism"] = locus_file.loc[:,"query"].str.split(r"_", expand = True).loc[:,0]
                 # motif id is part of file name
                 locus_file["motif"] = a.text[:-4]
-                self.df.append(locus_file.loc[:,["motif", "organism",
-                                                 "chormasome", "start",
-                                                 "stop", "frame",
-                                                 "strand"]], ignore_index=True)
-                except:
-                    print("error with {}\nError: {}".format(a.text, sys.exc_info()))
+                self.df = self.df.append(pd.DataFrame(locus_file.loc[:,final_cols]), ignore_index=True)
+            self.df.columns = final_cols
         return True
 
 
-    def load_jasper_pfm_files(self, url) -> bool:
+    def load_jasper_pfm_files(self) -> bool:
         """ TODO """
         if self.df == None:
             print("No data loaded, please use self.load_jasper_bed_files()")
-            return False
+        return False
+
+    def export(self) -> bool:
+        """ TODO """
+        self.df.to_csv(self.filename, sep = ",", header = True)
 
 
 # main
