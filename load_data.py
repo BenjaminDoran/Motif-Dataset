@@ -5,13 +5,18 @@ Purpose: make a usable motif finding dataset
 Output: 1 .csv file
 Data Source: Jasper database, http://jaspar.genereg.net
 """
+import pandas as pd
+import os.path
+import re
+import requests
+from bs4 import BeautifulSoup
+
 class JasperImporter:
     # startup
-    def __init__(self, url = "http://jaspar.genereg.net/html/DOWNLOAD/", filename = "Motifs.csv"):
-        """ Setup Importer"""
+    def __init__(self, url = "http://jaspar.genereg.net/html/DOWNLOAD/", filename = "motif-data.csv"):
+        """ Setup Importer """
         self.url = url
         self.filename = filename
-        import os.path
 
         if os.path.isfile(filename):
             self.load_csv()
@@ -20,10 +25,12 @@ class JasperImporter:
 
     # functions
     def load_csv(self) -> bool:
-        """ TODO """
-        import pandas as pd
-        self.df = pd.read_csv(self.filename, sep = ",", header = 1)
-        return True
+        """ reads in data.csv """
+        try:
+            self.df = pd.read_csv(self.filename, sep = ",", header = 1)
+            return True
+        except:
+            return False
 
     def load_jasper_bed_files(self) -> bool:
         """loads jasper bed files which contain jasper motif id
@@ -33,10 +40,6 @@ class JasperImporter:
             print("bed files already loaded from csv file")
             return False
         else:
-            import re
-            import requests
-            from bs4 import BeautifulSoup
-            import pandas as pd
             bed_url = self.url + "bed_files/"
             self.df = pd.DataFrame([])
             final_cols = ["motif", "organism",
