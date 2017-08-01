@@ -27,7 +27,7 @@ class JasperImporter:
     def load_csv(self) -> bool:
         """ reads in data.csv """
         try:
-            self.df = pd.read_csv(self.filename, sep = ",", header = 1)
+            self.df = pd.read_csv(self.filename, sep = ",")
             return True
         except:
             return False
@@ -43,7 +43,7 @@ class JasperImporter:
             bed_url = self.url + "bed_files/"
             self.df = pd.DataFrame([])
             final_cols = ["motif", "organism",
-                          "chromasome", "start",
+                          "chromosome", "start",
                            "stop", "query"]
 
             # enter bed directory
@@ -55,9 +55,9 @@ class JasperImporter:
             for a in bed_motifs:
                 locus_file = pd.read_csv(bed_url + a.text, sep = "\t", header = None)
                 try: # files have either 4 or 6 columns
-                    locus_file.columns = ["chromasome", "start", "stop", "query", "frame", "strand"]
+                    locus_file.columns = ["chromosome", "start", "stop", "query", "frame", "strand"]
                 except ValueError:
-                    locus_file.columns = ["chromasome", "start", "stop", "query"]
+                    locus_file.columns = ["chromosome", "start", "stop", "query"]
                 # parse query for organism name (and potentially strand)
                 locus_file["organism"] = locus_file.loc[:,"query"].str.split(r"_", expand = True).loc[:,0]
                 # motif id is part of file name
@@ -75,7 +75,7 @@ class JasperImporter:
 
     def export(self) -> bool:
         """ TODO """
-        self.df.to_csv(self.filename, sep = ",", header = True)
+        self.df.to_csv(self.filename, sep = ",", header = True, index = False)
 
 
 # main
