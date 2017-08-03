@@ -43,9 +43,14 @@ class JasperImporter:
         else:
             bed_url = self.url + "bed_files/"
             self.df = pd.DataFrame([])
-            final_cols = ["motif", "organism",
+            final_cols = ["motif-id", "organism",
                           "chromosome", "start",
-                           "stop", "query"]
+                           "stop", "strand"]
+            def strand_search(y):
+                try:
+                    return re.search("\+|\-", x["query"]).group(0)
+                except AttributeError:
+                    return None
 
             # enter bed directory
             response = requests.get(bed_url)
@@ -63,6 +68,8 @@ class JasperImporter:
                 locus_file["organism"] = locus_file.loc[:,"query"].str.split(r"_", expand = True).loc[:,0]
                 # motif id is part of file name
                 locus_file["motif"] = a.text[:-4]
+                # only + or - in query indicates strand
+                locus_file["strand"] = locus_file.apply(lambda x: strand_search(x), axis = 1)
                 self.df = self.df.append(pd.DataFrame(locus_file.loc[:,final_cols]), ignore_index=True)
             self.df.columns = final_cols
         return True
