@@ -14,8 +14,10 @@ from bs4 import BeautifulSoup
 
 class JasperImporter:
     # startup
-    def __init__(self, url="http://jaspar.genereg.net/html/DOWNLOAD/",
-                 bedfilename="motif-data.csv", createnew=True):
+    def __init__(self, 
+                 url="http://jaspar.genereg.net/html/DOWNLOAD/",
+                 bedfilename="motif-data.csv", 
+                 createnew=True):
         """ Setup Importer """
         self.url = url
         self.bedfilename = bedfilename
@@ -95,8 +97,8 @@ class JasperImporter:
         """ Converts UCSC style org ref names to Latin Names """
         name_table = {'tair10': 'arabidopsis thaliana', 
                       'at': 'arabidopsis thaliana', 
-                      'hg19': 'homo sapian', 
-                      'ce': 'caenorhabditis elegans ', 
+                      'hg19': 'homo sapiens', 
+                      'ce': 'caenorhabditis elegans', 
                       'mm9': 'mus muscosis', 
                       'dm': 'drosophila melanogaster'}
 
@@ -105,3 +107,5 @@ class JasperImporter:
     def export(self) -> bool:
         """ TODO """
         self.df.to_csv(self.bedfilename, sep=",", header=True, index=False)
+
+
