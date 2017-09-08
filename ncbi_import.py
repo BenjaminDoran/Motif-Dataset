@@ -7,13 +7,34 @@ Purpose: take organism + chromosome + posistion info ->
 Output: .csv file (sequences.csv) columns: label, sequence
 Data Source: NCBI Entrez -- https://www.ncbi.nlm.nih.gov/
 """
-
+from os import path, makedirs
+from urllib.error import HTTPError
+from time import sleep
+from random import randint
 from Bio import Entrez, SeqIO
-from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna
 import pandas as pd
 
 class NCBIimporter:
     """ TODO """
+    def __init__(self, user_email: str, in_file: str, indent: int=0, rand_lim: int=0):
+        """ Requires user_email and file of motif locations """
+        # Setup
+        Entrez.email = user_email
+        self.locdat = pd.read_csv(in_file, sep=",")
+        # sort locdat by chromosome
+        self.chromosomes = self.locdat[['organism', 'chromosome']] \
+                           .groupby(['organism', 'chromosome']) \
+                           .count()
+
+        self.seqdat = pd.DataFrame()
+        self.indent = indent
+        self.rand_lim = rand_lim
+
+
+        # make sequences directory
+        if not path.isdir('sequences'):
+            makedirs('sequences')
 
     id_switch = {
         # conversion table for organism + chromosome to RefSeq or GI id
@@ -65,41 +86,99 @@ class NCBIimporter:
             None
     }
 
-    def __init__(self, user_email: str, in_file: str):
-        """ Requires user_email and file of motif locations """
-        # Setup
-        Entrez.email = user_email
-        self.locdat = pd.read_csv(in_file, sep=",")
-        self.seqdat = pd.DataFrame()
-
-    def org_to_id(self, org: str, chrom: str) -> str:
+    def _org_to_id(self, org: str, chrom: str) -> str:
         """ get RefSeq or GI id from organism and chromosome """
         return self.id_switch[org](chrom)
 
-    def _search_chromosome(self) -> bool:
-        """ TODO """
-        return False
+    def _search_chromosome(self, chrom: SeqIO.SeqRecord,
+                           start: int, stop: int, strand: str) -> tuple:
+        """ returns (motif, mstart, mstop) """
+        # get randomized indents within a specific range
+        ind_start = (self.indent - randint(0, self.rand_lim))
+        ind_stop = (self.indent - randint(0, self.rand_lim))
 
-    def _load_chromosome(self, iden: str):
+        # length of motif
+        len_motif = (stop - start) + 1 # plus 1 because 0 vs. 1 indexing
+
+        # add indents
+        rstart = (start-1) - ind_start
+        rstop = stop + ind_stop
+
+        # select motif +/- indents
+        motif = chrom[rstart:rstop] if strand == "+" else \
+                     chrom[rstart:rstop].seq.complement()
+
+        # return motif, start index from selected sequence, and
+        # stop index from selected sequence
+        return (motif, ind_start, ind_start + len_motif)
+
+    def _fetch_chromosome(self, iden: str):
         """ fetch fasta sequence from NCBI given id """
-        with Entrez.efetch(db='nucleotide', id=iden, rettype="fasta") as handle:
-            return Seq(SeqIO.read(handle, 'fasta'))
+        try:
+            with Entrez.efetch(db='nucleotide', id=iden, rettype='fasta') as handle:
+                rec = SeqIO.read(handle, 'fasta')
+                rec.Alphabet = generic_dna
+                return rec
+        except HTTPError:
+            return None
 
-    def make_sequences(self) -> bool:
-        """ TODO """
-        # sort locdat by chromosome
+    def save_sequences(self) -> int:
+        """save chromosome sequences as fasta files in sequences folder
+        returns: number of sequences successfully saved
+        """
+        saved = 0
         # for each chromosome:
-        #   org_to_id
-        #   _load_chromosome
-        #   _search_chromosome
-        #   _add_label_seq
-        # export_sequences
-        return False
+        for org, chrom in self.chromosomes.index:
 
-    def export_sequences(self) -> bool:
+            # get id for looking in NCBI
+            refseq_id = self._org_to_id(org, chrom.strip('chr'))
+
+            # fetch sequence from NCBI
+            big_sequence = self._fetch_chromosome(refseq_id)
+            if not big_sequence:
+                print('error: in {} {} refseq_id {}'.format(org, chrom, refseq_id))
+
+            else:
+                # save sequence
+                outfilename = "sequences/" + org.replace(" ", "-") +\
+                              chrom.strip('chr') + ".fasta"
+                SeqIO.write(big_sequence, outfilename, 'fasta')
+
+                # update status
+                saved += 1
+                print('saved', big_sequence.description)
+
+                # ensure requests do not go to NCBI too fast
+                sleep(1)
+        return saved
+
+    def load_sequences(self) -> int:
         """ TODO """
-        return False
+        loaded = 0
+        dirname = "sequences/"
+        for org, chrom in self.chromosomes.index:
+
+            chrom_file = dirname + org.replace(" ", "-") +\
+                         chrom.strip("chr") + ".fasta"
+            chrom_record = SeqIO.read(chrom_file, 'fasta')
+
+            # get rows for organism and chromosome
+            startstops = self.locdat.loc[(self.locdat['organism'] == org) &
+                                         (self.locdat['chromosome'] == chrom)]
+            # retrive motif + indent
+            for indices in startstops.values:
+                motif, mstart, mstop = self._search_chromosome(chrom_record,
+                                                               indices[-3],
+                                                               indices[-2],
+                                                               indices[-1])
+                row = pd.DataFrame([*indices, motif, mstart, mstop]).transpose()
+                row.columns = ["motif-id", "organism", "chromosome", "start",
+                               "stop", "strand", "seq", "mstart", "mstop"]
+                self.seqdat = self.seqdat.append(row, ignore_index=True)
+                loaded += 1
+
+        return loaded
 
 
 if __name__ == "__main__":
-    print("TODO")
+    pass
