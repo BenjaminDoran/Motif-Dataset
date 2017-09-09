@@ -1,2 +1,4 @@
 __pycache__/
 sequences/
+*.p
+test*
