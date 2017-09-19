@@ -90,27 +90,29 @@ class NCBIimporter:
         """ get RefSeq or GI id from organism and chromosome """
         return self.id_switch[org](chrom)
 
-    def _search_chromosome(self, chrom: SeqIO.SeqRecord,
-                           start: int, stop: int, strand: str) -> tuple:
+    def _search_chromosome(self, 
+                           chrom: SeqIO.SeqRecord,
+                           start: pd.Series,
+                           stop: pd.Series, 
+                           strand: pd.Series) -> tuple:
         """ returns (motif, mstart, mstop) """
-        # get randomized indents within a specific range
-        ind_start = (self.indent - randint(0, self.rand_lim))
-        ind_stop = (self.indent - randint(0, self.rand_lim))
+        # get randomized indents within a set range
+        rstart = start.apply(lambda d: d - (self.indent - randint(0, self.rand_lim)))
+        rstop = stop.apply(lambda d: d + (self.indent - randint(0, self.rand_lim)))
 
         # length of motif
-        len_motif = (stop - start) + 1 # plus 1 because 0 vs. 1 indexing
-
-        # add indents
-        rstart = (start-1) - ind_start
-        rstop = stop + ind_stop
+        len_motifs = (stop - start) + 1 # plus 1 because 0 vs. 1 indexing
 
         # select motif +/- indents
-        motif = chrom[rstart:rstop] if strand == "+" else \
-                     chrom[rstart:rstop].seq.complement()
-
+        motifs = pd.concat([rstart, rstop, strand], axis=1)\
+                   .apply(lambda r: str(chrom[r["start"]-1:r["stop"]].seq)
+                                    if r["strand"] == "+" else
+                                    str(chrom[r["start"]-1:r["stop"]].seq.complement()),
+                                    axis=1)
+        
         # return motif, start index from selected sequence, and
         # stop index from selected sequence
-        return (motif, ind_start, ind_start + len_motif)
+        return (motifs, start - rstart, start - rstart + len_motifs)
 
     def _fetch_chromosome(self, iden: str):
         """ fetch fasta sequence from NCBI given id """
@@ -166,16 +168,15 @@ class NCBIimporter:
             startstops = self.locdat.loc[(self.locdat['organism'] == org) &
                                          (self.locdat['chromosome'] == chrom)]
             # retrive motif + indent
-            for indices in startstops.values:
-                motif, mstart, mstop = self._search_chromosome(chrom_record,
-                                                               indices[-3],
-                                                               indices[-2],
-                                                               indices[-1])
-                row = pd.DataFrame([*indices, motif, mstart, mstop]).transpose()
-                row.columns = ["motif-id", "organism", "chromosome", "start",
-                               "stop", "strand", "seq", "mstart", "mstop"]
-                self.seqdat = self.seqdat.append(row, ignore_index=True)
-                loaded += 1
+            motifs, mstarts, mstops = self._search_chromosome(chrom_record,
+                                                              startstops["start"],
+                                                              startstops["stop"],
+                                                              startstops["strand"])
+            rows = pd.concat([startstops, motifs, mstarts, mstops], axis=1)
+            rows.columns = ["motif-id", "organism", "chromosome", "start",
+                           "stop", "strand", "seq", "mstart", "mstop"]
+            self.seqdat = self.seqdat.append(rows, ignore_index=True)
+            loaded += 1
 
         return loaded
 
