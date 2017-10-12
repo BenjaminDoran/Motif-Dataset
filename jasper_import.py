@@ -13,6 +13,9 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 
+BASE_URL = "http://jaspar.genereg.net/html/DOWNLOAD/"
+OUTFILE = "./motif-data.csv"
+
 
 def switch_org_name(orgs: pd.Series) -> pd.Series:
     """ Converts UCSC style org ref names to Latin Names """
@@ -41,16 +44,16 @@ def expand_query(query: pd.Series) -> pd.DataFrame:
 class JasperImporter:
     """ TODO """
     # startup
-    def __init__(self, url, bedfilename, createnew=True):
+    def __init__(self, url=BASE_URL, outfile=OUTFILE, createnew=True):
         """ Setup Importer """
         self.url = url
-        self.bedfilename = bedfilename
+        self.outfile = outfile
 
         if createnew:
             self.datf = pd.DataFrame([], columns=["motif-id", "organism",
                                                   "chromosome", "start",
                                                   "stop", "strand"])
-        elif os.path.isfile(bedfilename) and not createnew:
+        elif os.path.isfile(outfile) and not createnew:
             self.load_csv()
         else:
             print('No data to load, acting in createnew mode')
@@ -59,7 +62,7 @@ class JasperImporter:
     # functions
     def load_csv(self) -> bool:
         """ reads in data.csv """
-        self.datf = pd.read_csv(self.bedfilename, sep=",")
+        self.datf = pd.read_csv(self.outfile, sep=",")
         return True
 
     def load_jasper_bed_files(self) -> bool:
@@ -76,9 +79,6 @@ class JasperImporter:
         soup = BeautifulSoup(response.content, "html.parser")
         # all links to files
         bed_motifs = soup.find_all("a", text=re.compile("MA."))
-
-        # print status
-        print("Loading jasper bed files", end="")
 
         # for link to file
         for link in bed_motifs:
@@ -112,15 +112,12 @@ class JasperImporter:
             # append new columns
             self.datf = self.datf.append(result_df, ignore_index=True)
 
-            # print status
-            print(".", end="")
-        print(" Done!")
         return True
 
     def export(self) -> bool:
         """ TODO """
         try:
-            self.datf.to_csv(self.bedfilename, sep=",", header=True, index=False)
+            self.datf.to_csv(self.outfile, sep=",", header=True, index=False)
             return True
         except:
             return False

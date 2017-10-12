@@ -17,7 +17,8 @@ import pandas as pd
 
 class NCBIimporter:
     """ TODO """
-    def __init__(self, user_email: str, in_file: str, indent: int=0, rand_lim: int=0):
+    def __init__(self, user_email: str, in_file: str, indent: int=0,
+                 rand_lim: int=0, makenew: bool=False):
         """ Requires user_email and file of motif locations """
         # Setup
         Entrez.email = user_email
@@ -30,6 +31,7 @@ class NCBIimporter:
         self.seqdat = pd.DataFrame()
         self.indent = indent
         self.rand_lim = rand_lim
+        self.makenew = makenew
 
 
         # make sequences directory
@@ -135,15 +137,22 @@ class NCBIimporter:
             # get id for looking in NCBI
             refseq_id = self._org_to_id(org, chrom.strip('chr'))
 
+            outfilename = "sequences/" + org.replace(" ", "-") +\
+                              chrom.strip('chr') + ".fasta"
+
+            # if file exists and makenew is false go to next entry
+            if path.isfile(outfilename) and not self.makenew:
+                print(f"{outfilename} already exists.")
+                continue
+    
             # fetch sequence from NCBI
             big_sequence = self._fetch_chromosome(refseq_id)
+
             if not big_sequence:
                 print('error: in {} {} refseq_id {}'.format(org, chrom, refseq_id))
 
             else:
                 # save sequence
-                outfilename = "sequences/" + org.replace(" ", "-") +\
-                              chrom.strip('chr') + ".fasta"
                 SeqIO.write(big_sequence, outfilename, 'fasta')
 
                 # update status
