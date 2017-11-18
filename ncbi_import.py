@@ -73,18 +73,18 @@ class NCBIimporter:
         # human
         'homo sapiens':
             lambda chrom:
-            "NC_0000{:02d}".format(int(chrom)) if
+            f"CM0006{(int(chrom) + 62):02d}.1" if
             chrom.isnumeric() and (0 < int(chrom) < 23) else
-            "NC_000023" if chrom == "X" else
-            "NC_000024" if chrom == "Y" else
+            "CM000685.1" if chrom == "X" else
+            "CM000685.1" if chrom == "Y" else
             None,
         # house mouse
         'mus musculus':
             lambda chrom:
-            "NC_0000{:02d}".format(int(chrom)+66) if
+            f"CM00{(int(chrom) + 993):04d}.1" if
             chrom.isnumeric() and (0 < int(chrom) < 20) else
-            "NC_000086" if chrom == "X" else
-            "NC_000087" if chrom == "Y" else
+            "CM001013.1" if chrom == "X" else
+            "CM001014.1" if chrom == "Y" else
             None
     }
 

@@ -12,7 +12,7 @@ from jasper_import import JasperImporter
 from regulondb_import import RegulonDBImporter
 from ncbi_import import NCBIimporter
 
-JASPER_URL = "http://jaspar.genereg.net/html/DOWNLOAD/"
+JASPER_URL = "http://jaspar2016.genereg.net/html/DOWNLOAD/"
 REGULON_URL = "http://regulondb.ccg.unam.mx/menu/download/datasets/files/BindingSiteSet.txt"
 
 def import_jasper_loc_data(url, outfile, createnew=False) -> bool:

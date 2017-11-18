@@ -14,7 +14,7 @@ DATAFILE = "./motif-data.csv"
 
 BASE_URL = "http://regulondb.ccg.unam.mx/menu/download/datasets/files/BindingSiteSet.txt"
 
-IN_COLUMNS = ["tf-id", "tf-name", "motif-id", "start",
+IN_COLUMNS = ["motif-id", "tf-name", "site-id", "start",
  		      "stop", "strand", "tf-gen-id", "tf-unit",
 		      "gene-ex", "promoter", "center", "sequence",
 		      "evidence", "evi-level"]

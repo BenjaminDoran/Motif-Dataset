@@ -13,7 +13,7 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 
-BASE_URL = "http://jaspar.genereg.net/html/DOWNLOAD/"
+BASE_URL = "http://jaspar2016.genereg.net/html/DOWNLOAD/"
 OUTFILE = "./motif-data.csv"
 
 
