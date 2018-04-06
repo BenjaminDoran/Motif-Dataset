@@ -7,7 +7,7 @@ Output:
 Data Source: "motif-data.csv", NCBI-Entrez <>
 """
 import sys
-import progressbar
+
 from jasper_import import JasperImporter
 from regulondb_import import RegulonDBImporter
 from ncbi_import import NCBIimporter
@@ -49,8 +49,7 @@ def ncbi_save_sequences(email, infile):
 
 
 def load():
-    """ TODO """
-    bar = progressbar.ProgressBar(maxval=20,widgets=[progressbar.Bar('=', '[', ']'), ' '])
+    """ Loads Jasper Bed files, NCBI human genome, and extracts sequences. """
 
     # get user email
     email = ""
@@ -66,25 +65,19 @@ def load():
 
     # fetch jasper motif location data
     print("loading jasper bed files")
-    bar.start()
     if not import_jasper_loc_data(JASPER_URL, locfile, createnew=True):
         sys.exit(1)
-    bar.finish()
     print("loaded jasper location data")
 
     print("loading regulonDB location data")
-    bar.start()
     if not import_regulon_loc_data(REGULON_URL, locfile):
         sys.exit(2)
-    bar.finish()
     print("loaded regulonDB location data")
 
     # From location data fetch and save chromosome sequences
     print("saving ncbi sequences for all organisms")
-    bar.start()
     if ncbi_save_sequences(email, locfile) < 1:
         sys.exit(3)
-    bar.finish()
     print("saved ncbi sequences for all organisms")
 
     print("all tasks completed successfully!")

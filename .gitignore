@@ -1,4 +1,7 @@
 __pycache__/
 sequences/
-*.p
+tmp/
+
 test*
+*.p
+*.csv
