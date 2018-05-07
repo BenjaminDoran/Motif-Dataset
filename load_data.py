@@ -4,42 +4,24 @@ Name: load_data.py
 Date: July 2017
 Purpose: make a usable motif finding dataset
 Output:
-Data Source: "motif-data.csv", NCBI-Entrez <>
+Data Source: "motif-data.csv", NCBI-Entrez
 """
-import sys
+import sys, os
 
 from jasper_import import JasperImporter
-from regulondb_import import RegulonDBImporter
 from ncbi_import import NCBIimporter
 
-JASPER_URL = "http://jaspar2016.genereg.net/html/DOWNLOAD/"
+JASPER_URL = "http://jaspar.genereg.net/download/bed_files.tar.gz"
 REGULON_URL = "http://regulondb.ccg.unam.mx/menu/download/datasets/files/BindingSiteSet.txt"
 
 def import_jasper_loc_data(url, outfile, createnew=False) -> bool:
     """ fetch motif locations from jasper database """
     jas_imp = JasperImporter(url, outfile)
 
-    if not jas_imp.load_jasper_bed_files():
-        print("error loading jasper bedfiles")
-        return False
-
-    if not jas_imp.export():
-        print("unable to export location data to csv")
-        return False
-    return True
-
-def import_regulon_loc_data(url, outfile, createnew=False):
-    reg_imp = RegulonDBImporter(url, outfile)
-
-    if not reg_imp.load_regulon_data():
-        print("unable to load Regulon data")
-        return False
-
-    if not reg_imp.export():
-        print('unable to export regulon location data to csv')
-        return False
-
-    return True
+    if not os.path.exists("./tmp/bed_files/"):
+        jas_imp.download_jasper_bed_files()
+    jas_imp.load_jasper_bed_files()
+    jas_imp.export()
 
 
 def ncbi_save_sequences(email, infile):
@@ -48,39 +30,29 @@ def ncbi_save_sequences(email, infile):
     return ncbi_imp.save_sequences()
 
 
-def load():
+def load(email, locfile):
     """ Loads Jasper Bed files, NCBI human genome, and extracts sequences. """
+    # fetch jasper motif location data
+    print("loading jasper bed files")
+    import_jasper_loc_data(JASPER_URL, locfile, createnew=True)
+    print("loaded jasper location data")
 
+    # # From location data fetch and save chromosome sequences
+    # print("saving ncbi sequences for all organisms")
+    # ncbi_save_sequences(email, locfile)
+    # print("saved ncbi sequences for all organisms")
+
+    print("all tasks completed successfully!")
+
+if __name__ == "__main__":
     # get user email
     email = ""
     while not email:
         email = input("Please enter your email address: ")
 
     # confirm location file name
-    locfile = input("pulling from 'motif-data.csv'\n" + 
-                    "if this is not correct please type filename and press enter.\n"+
-                    "else press enter:\n")
+    locfile = input("\nPulling from 'motif-data.csv'\n" + 
+                    "If this is correct press ENTER (else type filename and press ENTER): ")
     if not locfile:
         locfile = "motif-data.csv"
-
-    # fetch jasper motif location data
-    print("loading jasper bed files")
-    if not import_jasper_loc_data(JASPER_URL, locfile, createnew=True):
-        sys.exit(1)
-    print("loaded jasper location data")
-
-    print("loading regulonDB location data")
-    if not import_regulon_loc_data(REGULON_URL, locfile):
-        sys.exit(2)
-    print("loaded regulonDB location data")
-
-    # From location data fetch and save chromosome sequences
-    print("saving ncbi sequences for all organisms")
-    if ncbi_save_sequences(email, locfile) < 1:
-        sys.exit(3)
-    print("saved ncbi sequences for all organisms")
-
-    print("all tasks completed successfully!")
-
-if __name__ == "__main__":
-    load()
+    load(email, locfile)

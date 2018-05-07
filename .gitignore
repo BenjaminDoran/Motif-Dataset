@@ -1,6 +1,6 @@
 __pycache__/
-sequences/
-tmp/
+[Ss]equences/
+[Gg]enome/
 
 test*
 *.p
