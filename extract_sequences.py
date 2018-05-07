@@ -17,11 +17,11 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
 # custom
-from id_switcher import id_to_refseq
+from id_switcher import id_to_refseq, switch_org_name
 
 # Global settings
 Entrez.email = None
-OUTFILE = './MA0852.2SEQS1k.csv'
+OUTFILE = './MA0852.2SEQS1k'
 BEDFILE = "http://jaspar.genereg.net/download/bed_files/MA0852.2.bed" # change bedfile if needed
 CHROM_DIR = "./Genome/" # store chromosomes in Genome folder
 
@@ -61,7 +61,7 @@ def load_jasper_bed_files(filename):
     result_df["motif-id"] = filename[-12:-4]
 
     # switch org names to Latin
-    result_df["organism"] = "homo sapiens"
+    result_df["organism"] = switch_org_name(result_df['genome'])
 
     # reorder columns
     return result_df[final_cols]
@@ -167,17 +167,17 @@ def load_sequences(datf, length):
     return seqdat
 
 def convert_to_fasta(outfile):
-    anno_motifs = pd.read_csv(outfile) # annotated motif instances
+    anno_motifs = pd.read_csv(f"{outfile}.csv") # annotated motif instances
     # transform to seqRecords
     seqs = [SeqRecord(Seq(s), id=f"Seq{i}", description=f"Sequence from {outfile}") 
                                 for i, s in zip(range(anno_motifs.shape[0]), anno_motifs['seq'])]
-    SeqIO.write(seqs, f"{outfile[:-4]}.fasta", 'fasta')
+    SeqIO.write(seqs, f"{outfile}.fasta", 'fasta')
 
 def load(bedfile, outfile, length):
     bed_df = load_jasper_bed_files(bedfile)
     download_needed_chromosomes(bed_df)
     seq_df = load_sequences(bed_df, length)
-    seq_df.to_csv(outfile, sep=",", header=True, index=False)
+    seq_df.to_csv(f"{outfile}.csv", sep=",", header=True, index=False)
     convert_to_fasta(outfile)
 
 
